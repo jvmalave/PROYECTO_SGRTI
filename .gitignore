@@ -1,0 +1,18 @@
+# Datos de Base de Datos
+/db_data/
+
+# Variables de Entorno (Seguridad)
+**/.env
+**/.env.local
+
+# Dependencias
+**/node_modules/
+**/vendor/
+
+# Docker Logs & Temp
+*.log
+.docker/
+
+# IDEs
+.vscode/
+.idea/

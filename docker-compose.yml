@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # El corazón de los datos
+  sgrti_db:
+    image: postgres:15-alpine
+    container_name: sgrti_db
+    restart: always
+    environment:
+      POSTGRES_DB: sgrti_db
+      POSTGRES_USER: sgrti_admin
+      POSTGRES_PASSWORD: secret_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+      # Script inicial para crear los esquemas lógicos
+      - ./init_db:/docker-entrypoint-initdb.d 
+
+  # El motor de velocidad (Cache y Colas)
+  sgrti_redis:
+    image: redis:alpine
+    container_name: sgrti_redis
+    ports:
+      - "6379:6379"
+
+  # Nuestra API Laravel
+  api:
+    build:
+      context: ./sgrti-api
+      dockerfile: Dockerfile
+    container_name: sgrti_api
+    volumes:
+      - ./sgrti-api:/var/www/html
+    depends_on:
+      - sgrti_db
+      - sgrti_redis
