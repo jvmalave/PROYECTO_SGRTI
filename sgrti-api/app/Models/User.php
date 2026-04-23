@@ -2,31 +2,42 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\HasUuid;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Tymon\JWTAuth\Contracts\JWTSubject; // Interfaz necesaria para JWT
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable, HasUuid;
+
+    protected $table = 'identity.users';
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+ * Los atributos que deben ser casteados.
+ *
+ * @return array<string, string>
+ */
     protected function casts(): array
+  {
+    return [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'roles' => 'array', // Aseguramos que los roles se manejen como un array
+    ];
+  }
+
+    // Métodos obligatorios de la interfaz JWTSubject
+    public function getJWTIdentifier()
+    {
+        return $this->getKey(); // Retorna el UUID
+    }
+
+    public function getJWTCustomClaims()
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'roles' => $this->roles, // Inyectamos los roles en el payload del token (US03)
+            'name'  => $this->name
         ];
     }
 }
