@@ -10,6 +10,11 @@ jobs:
   laravel-tests:
     runs-on: ubuntu-latest
 
+    # Definimos que todos los comandos se ejecuten dentro de sgrti-api
+    defaults:
+      run:
+        working-directory: sgrti-api
+
     services:
       postgres:
         image: postgres:16
