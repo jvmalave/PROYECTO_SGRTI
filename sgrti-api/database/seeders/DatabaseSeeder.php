@@ -3,23 +3,22 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Creamos el usuario administrador para el Sprint 1
+        User::create([
+            'name'     => 'Admin SGRTI',
+            'email'    => 'admin@sgrti.com',
+            'password' => Hash::make('secret123'),
+            'roles'    => json_encode(['admin']), // US03: Base para RBAC
         ]);
     }
 }
