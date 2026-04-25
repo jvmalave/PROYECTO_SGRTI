@@ -1,0 +1,72 @@
+name: Laravel CI (Sprint 1)
+
+on:
+  push:
+    branches: [ "develop", "main" ]
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sgrti_db_test
+          POSTGRES_USER: sgrti_admin
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, bcmath, gd, zip, pdo_pgsql, redis
+        coverage: none
+
+    - name: Install Dependencies
+      run: composer install --prefer-dist --no-interaction --no-progress
+
+    - name: Prepare Environment
+      run: |
+        cp .env.example .env
+        php artisan key:generate
+        php artisan jwt:secret --force
+
+    - name: Run Migrations
+      env:
+        DB_CONNECTION: pgsql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 5432
+        DB_DATABASE: sgrti_db_test
+        DB_USERNAME: sgrti_admin
+        DB_PASSWORD: password
+      run: php artisan migrate --force
+
+    - name: Execute Tests
+      env:
+        DB_CONNECTION: pgsql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 5432
+        DB_DATABASE: sgrti_db_test
+        DB_USERNAME: sgrti_admin
+        DB_PASSWORD: password
+        QUEUE_CONNECTION: redis
+        REDIS_HOST: 127.0.0.1
+      run: php artisan test
