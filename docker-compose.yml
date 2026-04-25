@@ -30,6 +30,8 @@ services:
       context: ./sgrti-api
       dockerfile: Dockerfile
     container_name: sgrti_api
+    ports:
+      - "8000:8000"
     volumes:
       - ./sgrti-api:/var/www/html
     depends_on:
