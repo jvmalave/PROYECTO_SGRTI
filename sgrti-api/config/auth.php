@@ -46,7 +46,7 @@ return [
         ],
 
       'api' => [
-        'driver' => 'jwt', // <--- Se cambia sanctum' por 'jwt'
+        'driver' => 'jwt', // 
         'provider' => 'users',
       ],
     ],
