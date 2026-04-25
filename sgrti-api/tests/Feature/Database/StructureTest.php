@@ -10,38 +10,24 @@ uses(DatabaseTransactions::class);
 
 describe('US02: Arquitectura Multiesquema y Persistencia', function () {
 
-    // test('Escenario 01: Verificación de estructura multiesquema', function () {
-    //     $schemas = collect(DB::select("SELECT schema_name FROM information_schema.schemata"))
-    //         ->pluck('schema_name')
-    //         ->toArray();
-
-    //     // $expectedSchemas = ['identity', 'requirements_core', 'execution_flow', 'reporting_kpi', 'audit_logs'];
-    //     $expectedSchemas = ['identity', 'audit_logs'];
-
-    //     foreach ($expectedSchemas as $schema) {
-    //         expect($schemas)->toContain($schema);
-    //     }
-
-    //     $publicTables = DB::select("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
-    //     // Incluimos las tablas que Laravel crea por defecto en el esquema público
-    //     $allowedInPublic = ['migrations', 'cache', 'cache_locks', 'personal_access_tokens', 'failed_jobs', 'jobs'];
-
-    //     foreach ($publicTables as $table) {
-    //         expect($allowedInPublic)->toContain($table->table_name);
-    //     }
-    // });
-
     test('Escenario 01: Verificación de estructura multiesquema', function () {
-        // Obtenemos los esquemas reales de la base de datos
-        $schemasInDb = collect(DB::select("SELECT schema_name FROM information_schema.schemata"))
+        $schemas = collect(DB::select("SELECT schema_name FROM information_schema.schemata"))
             ->pluck('schema_name')
             ->toArray();
 
-        // Esquemas que OBLIGATORIAMENTE deben estar en el Sprint 1
-        $requiredSchemas = ['identity', 'audit_logs'];
+        // $expectedSchemas = ['identity', 'requirements_core', 'execution_flow', 'reporting_kpi', 'audit_logs'];
+        $expectedSchemas = ['identity', 'audit_logs'];
 
-        foreach ($requiredSchemas as $schema) {
-            expect($schemasInDb)->toContain($schema);
+        foreach ($expectedSchemas as $schema) {
+            expect($schemas)->toContain($schema);
+        }
+
+        $publicTables = DB::select("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+        // Incluimos las tablas que Laravel crea por defecto en el esquema público
+        $allowedInPublic = ['migrations', 'cache', 'cache_locks', 'personal_access_tokens', 'failed_jobs', 'jobs'];
+
+        foreach ($publicTables as $table) {
+            expect($allowedInPublic)->toContain($table->table_name);
         }
     });
 
@@ -71,16 +57,4 @@ describe('US02: Arquitectura Multiesquema y Persistencia', function () {
         expect($ids->unique()->count())->toBe($count);
     });
 
-
-    test('Escenario 05: Prevención de contaminación del esquema público', function () {
-        $publicTables = collect(DB::select("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
-            ->pluck('table_name')
-            ->toArray();
-
-        $allowedInPublic = ['migrations', 'cache', 'cache_locks', 'personal_access_tokens', 'failed_jobs', 'jobs'];
-
-        foreach ($publicTables as $table) {
-            expect($allowedInPublic)->toContain($table);
-        }
-    });
 });
