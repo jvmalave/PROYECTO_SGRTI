@@ -41,7 +41,14 @@ Route::prefix('v1/core')->group(function () {
     // Momento 2 :Estimación
     // El {id} será el UUID del requerimiento que recibiste en el Momento 1
     Route::put('requirements/{id}/estimation', [RequirementController::class, 'updateEstimation']);
+
+  // Listado de requerimientos con filtros (US-005)
+
+     Route::get('requirements', [RequirementController::class, 'index']); // Listar
     
 });
+
+
+
 
 
