@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Core\RequirementController;
 
 // --- Rutas Públicas ---
 
@@ -26,3 +27,21 @@ Route::middleware(['auth:api'])->group(function () {
     })->middleware('role:auditor');
     
 });
+
+/**
+ * --- Rutas del Core (Sprint 2) ---
+ * Por ahora las dejamos fuera del middleware 'auth:api' para que puedas
+ * probar en Thunder Client sin lidiar con el Token JWT.
+ */
+Route::prefix('v1/core')->group(function () {
+    
+    // Momento 1: Registro de Requerimiento (CU-004 + CU-012)
+    Route::post('requirements', [RequirementController::class, 'store']);
+
+    // Momento 2 :Estimación
+    // El {id} será el UUID del requerimiento que recibiste en el Momento 1
+    Route::put('requirements/{id}/estimation', [RequirementController::class, 'updateEstimation']);
+    
+});
+
+
