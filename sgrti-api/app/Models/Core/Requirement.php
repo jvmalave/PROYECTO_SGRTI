@@ -10,6 +10,8 @@ class Requirement extends Model
 {
     use HasUuid, SoftDeletes; //   Se utiliza el Trait para UUIDT y el SoftDeletes borrado lógico
 
+    protected $appends = ['is_editable'];
+
     protected $table = 'requirements_core.requirements';
 
     // 
@@ -35,4 +37,10 @@ class Requirement extends Model
     {
         return $this->hasMany(RequirementConsultant::class, 'requirement_id');
     }
+
+    public function getIsEditableAttribute(): bool
+{
+    // Solo es editable si NO ha llegado a ETF
+    return $this->fase_actual !== 'ATF';
+}
 }

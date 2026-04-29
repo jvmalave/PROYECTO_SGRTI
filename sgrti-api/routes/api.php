@@ -38,6 +38,9 @@ Route::prefix('v1/core')->group(function () {
     // Momento 1: Registro de Requerimiento (CU-004 + CU-012)
     Route::post('requirements', [RequirementController::class, 'store']);
 
+    // Edición de Requerimiento (CU-007)
+    Route::put('requirements/{id}', [RequirementController::class, 'update']);
+
     // Momento 2 :Estimación
     // El {id} será el UUID del requerimiento que recibiste en el Momento 1
     Route::put('requirements/{id}/estimation', [RequirementController::class, 'updateEstimation']);
@@ -45,8 +48,16 @@ Route::prefix('v1/core')->group(function () {
   // Listado de requerimientos con filtros (US-005)
 
      Route::get('requirements', [RequirementController::class, 'index']); // Listar
-    
+
+    // Detalle de requerimiento (US-006)
+
+     Route::get('requirements/{id}', [RequirementController::class, 'show']);  // Detalle
+
+    // Delete (eliminación lógica, no física)
+     Route::delete('requirements/{id}', [RequirementController::class, 'destroy']); // Eliminación lógica
 });
+
+
 
 
 

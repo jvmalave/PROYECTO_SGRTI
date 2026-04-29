@@ -39,8 +39,6 @@ class RequirementController extends Controller
     public function store(StoreRequirementRequest $request): JsonResponse
     {
       //return response()->json(['debug' => 'El controlador si recibe la llamada']);
-
-
         try {
             // El método $request->validated() retorna solo los datos que pasaron las reglas.
             $requirement = $this->requirementService->createInitialRequirement($request->validated());
@@ -59,6 +57,28 @@ class RequirementController extends Controller
             ], 500);
         }
     }
+
+
+    // CU-007: Edición de Requerimiento (Solo campos permitidos, sin afectar la fase ni la asignación de consultores)
+    public function update(StoreRequirementRequest $request, string $id): JsonResponse
+    {
+        try {
+            // validated() solo devolverá los campos que pasaron el filtro
+            $updated = $this->requirementService->updateRequirement($id, $request->validated());
+            
+            return response()->json([
+                'status' => 'success', 
+                'message' => 'Requerimiento actualizado correctamente',
+                'data' => $updated
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+              'status' => 'error', 
+              'message' => $e->getMessage()], 
+              422);
+        }
+    }
+
 
     /**
  * Momento 2: Registro de Estimación (Responsabilidad: Consultor CSPE)
@@ -102,6 +122,53 @@ class RequirementController extends Controller
                 'status'  => 'error',
                 'message' => 'Error al obtener el listado: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Mostrar el detalle de un requerimiento específico.
+     */
+    public function show(string $id): JsonResponse
+    {
+        try {
+            $requirement = $this->requirementService->getRequirementById($id);
+
+            return response()->json([
+                'status' => 'success',
+                'data'   => $requirement
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Requerimiento no encontrado o error: ' . $e->getMessage()
+            ], 404); // Retornamos 404 si el UUID no existe
+        }
+    }
+
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        try {
+            // Validamos que envíen la clave en el body
+            $request->validate([
+                'special_key' => 'required|string'
+            ]);
+
+            $this->requirementService->deleteRequirement($id, $request->special_key);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Requerimiento eliminado lógicamente con autorización.'
+            ], 200);
+
+        } catch (Exception $e) {
+            // Si la excepción es por la clave, podemos devolver un 403 (Prohibido)
+            $code = $e->getMessage() == "Clave de operaciones especiales incorrecta. Acción denegada." ? 403 : 500;
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], $code);
         }
     }
 }

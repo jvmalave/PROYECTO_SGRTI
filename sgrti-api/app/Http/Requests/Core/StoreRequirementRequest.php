@@ -19,32 +19,41 @@ class StoreRequirementRequest extends FormRequest
      * Reglas de validación para el Momento 1
      */
     public function rules(): array
-    {
-        return [
-            // Requerimiento (Padre)
-            
-            'numero_rrti' => 'required|string|unique:pgsql.requirements_core.requirements,numero_rrti',
-            'tipo_requerimiento'    => 'required|string',
-            'anio'                  => 'required|integer|min:2020',
-            'fecha_creacion'        => 'required|date',
-            'descripcion_detallada' => 'required|string|min:10',
-            
-            // Unidad Solicitante (Anidado)
-            'requesting_unit'                           => 'required|array',
-            'requesting_unit.sociedad'                  => 'required|string',
-            'requesting_unit.sistema'                   => 'required|string',
-            'requesting_unit.unidad_solicitante'        => 'required|string',
-            'requesting_unit.contacto_funcional_nom'    => 'required|string',
-            'requesting_unit.contacto_funcional_telf'   => 'required|string',
-            'requesting_unit.contacto_funcional_correo' => 'required|email',
-            'requesting_unit.contacto_gpgti_nom'        => 'required|string',
-            'requesting_unit.contacto_gpgti_correo'     => 'required|email',
+{
+    $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
+    $requirementId = $this->route('id'); // Captura el UUID de la URL
 
-            // Consultores CSPE
-            'consultants_uuids'     => 'required|array|min:1',
-            //'consultants_uuids.*'   => 'required|uuid'
-        ];
-    }
+    return [
+        // Requerimiento (Padre)
+        'numero_rrti' => [
+            $isUpdate ? 'sometimes' : 'required',
+            'string',
+            // Si es update, ignora el registro actual para que no falle el unique
+            $isUpdate 
+                ? "unique:pgsql.requirements_core.requirements,numero_rrti,{$requirementId}" 
+                : "unique:pgsql.requirements_core.requirements,numero_rrti"
+        ],
+        'tipo_requerimiento'    => [$isUpdate ? 'sometimes' : 'required', 'string'],
+        'anio'                  => [$isUpdate ? 'sometimes' : 'required', 'integer', 'min:2020'],
+        'fecha_creacion'        => [$isUpdate ? 'sometimes' : 'required', 'date'],
+        'descripcion_detallada' => [$isUpdate ? 'sometimes' : 'required', 'string', 'min:10'],
+        
+        // Unidad Solicitante (Anidado)
+        'requesting_unit'                           => [$isUpdate ? 'sometimes' : 'required', 'array'],
+        'requesting_unit.sociedad'                  => 'required_with:requesting_unit|string',
+        'requesting_unit.sistema'                   => 'required_with:requesting_unit|string',
+        'requesting_unit.unidad_solicitante'        => 'required_with:requesting_unit|string',
+        'requesting_unit.contacto_funcional_nom'    => 'required_with:requesting_unit|string',
+        'requesting_unit.contacto_funcional_telf'   => 'required_with:requesting_unit|string',
+        'requesting_unit.contacto_funcional_correo' => 'required_with:requesting_unit|email',
+        'requesting_unit.contacto_gpgti_nom'        => 'required_with:requesting_unit|string',
+        'requesting_unit.contacto_gpgti_correo'     => 'required_with:requesting_unit|email',
+
+        // Consultores CSPE
+        'consultants_uuids'     => [$isUpdate ? 'sometimes' : 'required', 'array', 'min:1'],
+        'consultants_uuids.*'   => 'required_with:consultants_uuids|uuid',
+    ];
+}
 
     /**
      * Mensajes personalizados en español (Opcional pero recomendado para el usuario final)

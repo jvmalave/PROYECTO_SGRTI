@@ -66,6 +66,41 @@ class RequirementService
         
     }
 
+    // Proceso del Momento 1: Edición de Requerimiento (CU-007)
+    public function updateRequirement(string $id, array $data)
+    {
+        return DB::transaction(function () use ($id, $data) {
+            $requirement = Requirement::findOrFail($id);
+
+            // 1. Bloqueo de seguridad: Si no es PL, no se toca.
+            if ($requirement->fase_actual !== 'PL') {
+                throw new Exception("El requerimiento ya superó la fase de Planificación. Edición bloqueada.");
+            }
+
+            // 2. Actualizar datos del Padre (Requerimiento)
+            $requirement->update($data);
+
+            // 3. Actualizar Unidad Solicitante (si viene en el request)
+            if (isset($data['requesting_unit'])) {
+                $requirement->requestingUnit()->update($data['requesting_unit']);
+            }
+
+            // 4. Actualizar Consultores (si viene el array de UUIDs)
+            if (isset($data['consultants_uuids'])) {
+                // Borramos los anteriores y asociamos los nuevos
+                $requirement->consultants()->delete();
+                foreach ($data['consultants_uuids'] as $u_id) {
+                    $requirement->consultants()->create([
+                        'user_uuid' => $u_id,
+                        'rol_cspe'  => 'Consultor' // O la lógica que definas
+                    ]);
+                }
+            }
+
+            return $requirement->load(['requestingUnit', 'consultants']);
+        });
+    }
+
     /**
      * Proceso del Momento 2: Registro/Actualización de Estimación
      * Responsabilidad: Consultor CSPE
@@ -75,13 +110,18 @@ class RequirementService
         return DB::transaction(function () use ($requirementId, $estimationData) {
             $requirement = Requirement::with(['requestingUnit', 'consultants'])->findOrFail($requirementId);
 
-            // 1. Guardar/Actualizar estimación
+            // Bloqueo: La estimación no se puede editar si ya se llegó a ATF
+            if ($requirement->fase_actual === 'ATF') {
+                throw new Exception("La estimación ha sido congelada (Fase ATF). No se permiten cambios.");
+            }
+
+            // Guardar/Actualizar estimación
             $estimation = $requirement->estimation()->updateOrCreate(
                 ['requirement_id' => $requirementId],
                 $estimationData
             );
 
-            // 2. Definir campos para verificar integridad
+            // Definir campos para verificar integridad
             $requiredFields = [
                 'h_analisis', 'f_analisis_ini', 'f_analisis_fin',
                 'h_diseno', 'f_diseno_ini', 'f_diseno_fin',
@@ -91,7 +131,7 @@ class RequirementService
                 'h_implementacion', 'f_implementacion_ini', 'f_implementacion_fin'
             ];
 
-            // 3. Validar si está completo y si las horas totales > 0
+            // Validar si está completo y si las horas totales > 0
             $isComplete = true;
             $totalHours = 0;
 
@@ -104,9 +144,8 @@ class RequirementService
                     $totalHours += (float) ($estimation->$field ?? 0);
                 }
             }
-
-            // 4. Hard Gate: Salto a ATF
-            if ($isComplete && $totalHours > 0) {
+            // 3. Si se cumplen las condiciones para ATF, actualizamos y notificamos
+            if ($isComplete && $totalHours > 0 && $requirement->fase_actual === 'PL') {
                 $requirement->update(['fase_actual' => 'ATF']);
                 
                 // 5. Notificación (Llamada al método de envío)
@@ -144,11 +183,39 @@ class RequirementService
         return $query->orderBy('created_at', 'desc')->paginate(10);
     }
 
+    /**
+     * Obtener el detalle completo de un requerimiento (Momento 1 + Momento 2)
+     */
+    public function getRequirementById(string $id)
+    {
+        // Traemos la unidad, consultores y la estimación
+        return Requirement::with(['requestingUnit', 'consultants', 'estimation'])
+            ->findOrFail($id);
+    }
 
     /**
-     * Lógica para envío de notificaciones
+     * Eliminación lógica con verificación de clave desde DB
      */
-    protected function sendPhaseCompletionEmail($requirement)
+    public function deleteRequirement(string $id, string $specialKey)
+    {
+        // 1. Buscar la clave en la tabla de configuraciones
+        $authorizedKey = DB::table('requirements_core.settings')
+            ->where('key', 'special_ops_key')
+            ->value('value');
+
+        // 2. Validar
+        if (!$authorizedKey || $specialKey !== $authorizedKey) {
+            throw new Exception("Clave de operaciones especiales incorrecta. Acción denegada.");
+        }
+
+        $requirement = Requirement::findOrFail($id);
+        return $requirement->delete();
+    }
+
+    /**
+     * Lógica para envío de notificaciones por email
+     */
+    protected function sendPhaseCompletionEmail(Requirement $requirement): void
     {
         // Recopilar correos:
         $emails = [];
@@ -175,5 +242,16 @@ class RequirementService
         // \Log::error("Email de notificación enviado para el requerimiento: " . $requirement->numero_rrti);
     }
 
-
+    /**
+     * Actualizar la clave de operaciones especiales
+     */
+    public function updateSpecialKey(string $newKey)
+    {
+        return DB::table('requirements_core.settings')
+            ->where('key', 'special_ops_key')
+            ->update([
+                'value' => $newKey,
+                'updated_at' => now()
+            ]);
+    }
 }
