@@ -9,6 +9,7 @@ use App\Services\Core\RequirementService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use OpenApi\Attributes as OA;
 
 class RequirementController extends Controller
 {
@@ -36,6 +37,29 @@ class RequirementController extends Controller
      * * @param StoreRequirementRequest $request
      * @return JsonResponse
      */
+
+
+    #[OA\Post(
+        path: "/api/v1/core/requirements",
+        summary: "Crear un nuevo requerimiento",
+        tags: ["Requirements"]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["title", "description", "priority"],
+            properties: [
+                new OA\Property(property: "title", type: "string", example: "Falla en nodo central"),
+                new OA\Property(property: "description", type: "string", example: "Se requiere revisión de fibra"),
+                new OA\Property(property: "priority", type: "string", example: "ALTA")
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: "Requerimiento creado exitosamente"
+    )]
+    #[OA\Response(response: 422, description: "Error de validación")]
     public function store(StoreRequirementRequest $request): JsonResponse
     {
       //return response()->json(['debug' => 'El controlador si recibe la llamada']);
@@ -58,6 +82,26 @@ class RequirementController extends Controller
         }
     }
 
+    #[OA\Put(
+        path: "/api/v1/core/requirements/{id}",
+        summary: "Actualizar requerimiento (Sujeto a bloqueo ATF)",
+        tags: ["Requirements"]
+    )]
+    #[OA\Parameter(
+        name: "id",
+        in: "path",
+        required: true,
+        description: "ID del requerimiento",
+        schema: new OA\Schema(type: "integer")
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Requerimiento actualizado"
+    )]
+    #[OA\Response(
+        response: 403,
+        description: "Acceso denegado: Requerimiento bloqueado por fase ATF"
+    )]
 
     // CU-007: Edición de Requerimiento (Solo campos permitidos, sin afectar la fase ni la asignación de consultores)
     public function update(StoreRequirementRequest $request, string $id): JsonResponse
@@ -84,6 +128,32 @@ class RequirementController extends Controller
  * Momento 2: Registro de Estimación (Responsabilidad: Consultor CSPE)
  * CU-011: Estimar Requerimiento
  */
+
+    #[OA\Patch(
+        path: "/api/v1/core/requirements/{id}/estimation",
+        summary: "Actualizar datos de estimación técnica",
+        tags: ["Requirements"]
+    )]
+    #[OA\Parameter(
+        name: "id",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "string")
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "horas_estimadas", type: "integer", example: 40),
+                new OA\Property(property: "costo_estimado", type: "number", format: "float", example: 1500.50),
+                new OA\Property(property: "tecnico_asignado", type: "string", example: "Ing. Juan Pérez")
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: "Estimación actualizada correctamente")]
+    #[OA\Response(response: 422, description: "Datos de estimación inválidos")]
+    #[OA\Response(response: 500, description: "Error interno del servidor")]
+
     public function updateEstimation(UpdateEstimationRequest $request, string $id): JsonResponse
     {
         try {
@@ -103,9 +173,15 @@ class RequirementController extends Controller
         }
     }
 
-    /**
-     * Listado paginado de requerimientos con filtros.
-     */
+    #[OA\Get(
+        path: "/api/v1/core/requirements",
+        summary: "Obtener lista de requerimientos",
+        tags: ["Requirements"]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Lista recuperada exitosamente"
+    )]
     public function index(Request $request): JsonResponse
     {
         try {
@@ -128,6 +204,25 @@ class RequirementController extends Controller
     /**
      * Mostrar el detalle de un requerimiento específico.
      */
+
+    #[OA\Get(
+        path: "/api/v1/core/requirements/{id}",
+        summary: "Consultar detalle de un requerimiento",
+        tags: ["Requirements"]
+    )]
+    #[OA\Parameter(
+        name: "id",
+        in: "path",
+        required: true,
+        description: "UUID o ID del requerimiento",
+        schema: new OA\Schema(type: "string")
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Detalle del requerimiento encontrado"
+    )]
+    #[OA\Response(response: 404, description: "Requerimiento no encontrado")]
+
     public function show(string $id): JsonResponse
     {
         try {
@@ -145,6 +240,27 @@ class RequirementController extends Controller
             ], 404); // Retornamos 404 si el UUID no existe
         }
     }
+
+    #[OA\Delete(
+        path: "/api/v1/core/requirements/{id}",
+        summary: "Eliminar requerimiento con clave especial",
+        tags: ["Requirements"]
+    )]
+    #[OA\Parameter(
+        name: "id",
+        in: "path",
+        required: true,
+        schema: new OA\Schema(type: "integer")
+    )]
+    #[OA\Parameter(
+        name: "special_key",
+        in: "query",
+        required: true,
+        description: "Clave de Operaciones Especiales",
+        schema: new OA\Schema(type: "string")
+    )]
+    #[OA\Response(response: 204, description: "Eliminado con éxito")]
+    #[OA\Response(response: 401, description: "Clave de seguridad incorrecta")]
 
     public function destroy(Request $request, string $id): JsonResponse
     {
