@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # El corazón de los datos
+  # Base de Datos (Shared-Nothing Architecture)
   sgrti_db:
     image: postgres:15-alpine
     container_name: sgrti_db
@@ -14,22 +12,31 @@ services:
       - "5433:5432"
     volumes:
       - ./db_data:/var/lib/postgresql/data
-      # Script inicial para crear los esquemas lógicos
       - ./init_db:/docker-entrypoint-initdb.d 
+    networks:
+      - sgrti_network
 
-  # El motor de velocidad (Cache y Colas)
+  # Redis: Broker para Notificaciones Asíncronas (US15), Cache para Mejorar Rendimiento y Almacenamiento de Sesiones
   sgrti_redis:
     image: redis:alpine
     container_name: sgrti_redis
     ports:
       - "6379:6379"
+    networks:
+      - sgrti_network
 
-  # Nuestra API Laravel
+  # API Laravel (Lógica de Negocio y SSOT)
   api:
+    command: php artisan serve --host=0.0.0.0 --port=8000
     build:
       context: ./sgrti-api
       dockerfile: Dockerfile
     container_name: sgrti_api
+    restart: unless-stopped
+    environment:
+      DB_HOST: sgrti_db
+      REDIS_HOST: sgrti_redis
+      QUEUE_CONNECTION: redis # Activa el uso de colas por defecto
     ports:
       - "8000:8000"
     volumes:
@@ -37,3 +44,44 @@ services:
     depends_on:
       - sgrti_db
       - sgrti_redis
+    networks:
+      - sgrti_network
+
+# Worker para Procesar Colas (US15)
+  # Procesa PhaseTransitionNotification en segundo plano
+  sgrti_worker:
+    build:
+      context: ./sgrti-api
+      dockerfile: Dockerfile
+    container_name: sgrti_worker
+    restart: unless-stopped
+    command: php artisan queue:work redis --tries=3 --backoff=60
+    volumes:
+      - ./sgrti-api:/var/www/html
+    depends_on:
+      - sgrti_db
+      - sgrti_redis
+      - api
+    networks:
+      - sgrti_network
+
+  # Interfaz de Usuario de Angular (Hito 4 - US05)
+  sgrti_web:
+    build:
+      context: ./sgrti-web
+      dockerfile: Dockerfile
+    container_name: sgrti_web
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./sgrti-web:/app
+      - /app/node_modules # Evita que los módulos del host pisen los del contenedor
+    depends_on:
+      - api
+    networks:
+      - sgrti_network
+
+networks:
+  sgrti_network:
+    driver: bridge
+

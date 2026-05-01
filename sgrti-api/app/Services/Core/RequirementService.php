@@ -215,31 +215,22 @@ class RequirementService
     /**
      * Lógica para envío de notificaciones por email
      */
+  
     protected function sendPhaseCompletionEmail(Requirement $requirement): void
     {
-        // Recopilar correos:
-        $emails = [];
+        $emails = $requirement->consultants->pluck('email')->toArray();
         
-        // Correo del contacto funcional (Unidad Solicitante)
         if ($requirement->requestingUnit->contacto_funcional_correo) {
             $emails[] = $requirement->requestingUnit->contacto_funcional_correo;
         }
 
-        // Correos de los consultores CSPE asignados y coordinador
-        foreach ($requirement->consultants as $consultant) {
-            // Aquí asumo que tienes una relación con el modelo User o el campo correo
-            // Por ahora lo dejamos listo para implementar el Mailable de Laravel
-            // $emails[] = $consultant->email; 
-        }
-
-        // El envío real se hace con:
-        // Mail::to($emails)->send(new PhaseTransitionNotification($requirement));
         if (!empty($emails)) {
-        Mail::to($emails)->send(new PhaseTransitionNotification($requirement));
-    }
-        
-        // Para tu prueba en Thunder Client, puedes poner un Log para verificar:
-        // \Log::error("Email de notificación enviado para el requerimiento: " . $requirement->numero_rrti);
+            /**
+             * El envío es instantáneo para el usuario. 
+             * El proceso real ocurre en el contenedor del Worker.
+             */
+            Mail::to($emails)->send(new PhaseTransitionNotification($requirement));
+        }
     }
 
     /**

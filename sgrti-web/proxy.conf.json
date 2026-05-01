@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "http://sgrti_api:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}
