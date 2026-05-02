@@ -1,0 +1,178 @@
+// --- CONTENEDOR PRINCIPAL Y TABLA ---
+.dashboard-container {
+  padding: 2.5rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+
+  .header-section {
+    margin-bottom: 2rem;
+    border-left: 5px solid #d32f2f;
+    padding-left: 1.5rem;
+    h1 { color: #212529; margin: 0; font-size: 2rem; }
+    .total-badge {
+      display: inline-block;
+      margin-top: 1rem;
+      background: #343a40;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+  }
+
+  .search-box {
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: white;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+
+    .search-input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      &:focus { outline: none; border-color: #d32f2f; }
+    }
+  }
+
+  .sgrti-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    
+    th { padding: 12px 15px; color: #495057; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
+
+    .requirement-row {
+      background: white;
+      transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+      &:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+      td { padding: 18px 15px; vertical-align: middle; }
+    }
+  }
+}
+
+// --- SISTEMA DE BADGES Y ESTADOS ---
+.phase-badge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  &[data-phase="PL"] { background: #f8d7da; color: #842029; }
+  &[data-phase="ATF"] { background: #cfe2ff; color: #084298; }
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  &.status-open { background: #d1e7dd; color: #0f5132; .dot { background: #198754; } }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+}
+
+// --- MODAL DE DETALLE Y EDICIÓN (CU-007) ---
+.detail-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+
+  .detail-card {
+    background: white;
+    width: 90%; max-width: 700px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    max-height: 90vh;
+
+    .detail-header {
+      background: #d32f2f; color: white;
+      padding: 1.2rem 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      h2 { margin: 0; font-size: 1.2rem; }
+      .btn-close { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+    }
+
+    .detail-content {
+      padding: 1.5rem;
+      overflow-y: auto;
+
+      .info-group {
+        margin-bottom: 2rem;
+        h3 { color: #555; font-size: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 1rem; }
+      }
+    }
+
+    // Estilos de Formulario (Modo Edición)
+    .field {
+      margin-bottom: 1.2rem;
+      label { display: block; font-size: 0.85rem; color: #d32f2f; font-weight: 700; margin-bottom: 6px; }
+      p { margin: 0; color: #333; font-size: 0.95rem; }
+    }
+
+    .edit-control {
+      width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px;
+      font-size: 0.9rem;
+      &:focus { outline: none; border-color: #d32f2f; box-shadow: 0 0 0 3px rgba(211,47,47,0.1); }
+      &.text-area { min-height: 100px; resize: vertical; }
+    }
+
+    .contact-card-edit {
+      background: #fdfdfd; border: 1px solid #eee; padding: 12px; border-radius: 8px;
+      label { color: #555; font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; display: block; }
+      p { font-weight: 600; margin: 0; }
+      small { display: block; color: #666; margin-top: 2px; }
+    }
+
+    .detail-footer {
+      padding: 1rem 1.5rem; background: #f8f9fa; border-top: 1px solid #eee; text-align: right;
+      button { margin-left: 10px; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; }
+      .btn-primary { background: #d32f2f; color: white; }
+      .btn-success { background: #198754; color: white; }
+      .btn-secondary { background: #6c757d; color: white; }
+    }
+    .edit-rrti-container {
+      display: flex;
+      flex-direction: column;
+      label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.9; margin-bottom: 2px; }
+      .header-input {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid white;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        &:focus { outline: none; background: white; color: #d32f2f; }
+      }
+    }
+  }
+}
+
+// --- BLOQUE CONSULTORES (MODO LECTURA) ---
+.read-only-context {
+  background: #f1f3f4; border: 1px dashed #ccc; padding: 15px; border-radius: 8px;
+  .consultant-item {
+    display: flex; align-items: center; gap: 12px; padding: 8px 0;
+    &:not(:last-child) { border-bottom: 1px solid #e0e0e0; }
+    .role-badge { background: #343a40; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+    .consultant-name { font-weight: 600; color: #333; font-size: 0.9rem; }
+    .consultant-email { font-size: 0.8rem; color: #666; margin-left: 5px; }
+  }
+}
+
+.role-notice { color: #d32f2f; margin-top: 10px; font-weight: 600; }
+.mb-1 { margin-bottom: 8px; }
+.mt-2 { margin-top: 1rem; }

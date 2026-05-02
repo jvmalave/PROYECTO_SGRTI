@@ -5,6 +5,7 @@ namespace App\Models\Core;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUuid; // Se importa el Trait
+use App\Models\User; // Se importa el modelo User para la relación con consultores
 
 class Requirement extends Model
 {
@@ -33,14 +34,26 @@ class Requirement extends Model
         return $this->hasOne(Estimation::class, 'requirement_id');
     }
 
+    // public function consultants()
+    // {
+    //     return $this->hasMany(RequirementConsultant::class, 'requirement_id');
+    // }
+
     public function consultants()
-    {
-        return $this->hasMany(RequirementConsultant::class, 'requirement_id');
-    }
+{
+    return $this->belongsToMany(
+        User::class, 
+        'requirements_core.requirement_consultants', // Tabla pivote con esquema
+        'requirement_id', 
+        'user_uuid', 
+        'id', 
+        'id'
+    )->withPivot('rol_cspe'); 
+}
 
     public function getIsEditableAttribute(): bool
-{
-    // Solo es editable si NO ha llegado a ETF
-    return $this->fase_actual !== 'ATF';
-}
+    {
+        // Solo es editable si NO ha llegado a ETF
+        return $this->fase_actual !== 'ATF';
+    }
 }
